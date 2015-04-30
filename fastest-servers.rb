@@ -100,7 +100,7 @@ def get_mirrors(mirrorlist_host)
    resp = http.get("/mirrors.txt")
 
    resp.body.each_line do |line|
-     mirror_list.push( URI(line) )
+     mirror_list.push( URI(line.chomp) )
    end
   end
   mirror_list
