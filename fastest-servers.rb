@@ -96,7 +96,7 @@ def get_mirrors(mirrorlist_host)
   mirror_list
 end
 
-if mirrolist_host
+if mirrorlist_host
   fastest_server_list = get_mirrors(mirrorlist_host)
 elsif mirrorlist_file
   fastest_server_list = File.open(mirrorlist_file).read
