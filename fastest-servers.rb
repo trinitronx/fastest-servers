@@ -150,6 +150,7 @@ File.open(FASTEST_SERVER_LIST_OUTPUT, 'wt') do |f|
     # puts fastest_server_list
     if fastest_server_list.length.zero? || fastest_server_list.length < 5
       f.truncate(0)
+      f.rewind
       puts "All mirror URIs failed to pass ping test!"
       raise EmptyListException, 'All mirror URIs failed to pass ping test!'
     end 
