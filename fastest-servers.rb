@@ -94,9 +94,9 @@ class NTP::Packet
   end
 end
 
-def get_mirrors(mirrorlist_host)
+def get_mirrors(mirrorlist_host, port)
   mirror_list = []
-  Net::HTTP.start(mirrorlist_host) do |http|
+  Net::HTTP.start(mirrorlist_host, port) do |http|
    resp = http.get("/mirrors.txt")
 
    resp.body.each_line do |line|
@@ -107,7 +107,7 @@ def get_mirrors(mirrorlist_host)
 end
 
 if mirrorlist_host
-  fastest_server_list = get_mirrors(mirrorlist_host)
+  fastest_server_list = get_mirrors(mirrorlist_host, port)
 elsif mirrorlist_file
   fastest_server_list = File.open(mirrorlist_file).read
 else
@@ -127,9 +127,9 @@ File.open(FASTEST_SERVER_LIST_OUTPUT, 'wt') do |f|
       # puts "LENGTH: #{fastest_server_list.length}"
       # puts fastest_server_list
       if SERVER_LIST_TYPE == 'HTTP'
-        pinger = Net::Ping::HTTP.new(uri.host, port, timeout)
+        pinger = Net::Ping::HTTP.new(uri.host, uri.port || 80, timeout)
       elsif SERVER_LIST_TYPE == 'NTP'
-        pinger = Net::Ping::UDP.new(uri.host, port, timeout)
+        pinger = Net::Ping::UDP.new(uri.host, uri.port || 123, timeout)
         pinger.data = NTP::Packet.new()
       end
       
