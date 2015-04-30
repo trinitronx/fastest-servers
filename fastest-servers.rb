@@ -37,6 +37,8 @@ end
 class NTP
 end
 class NTP::Packet
+  NTP_ADJ = 2208988800
+
   def initialize()
     generate_packet
   end
