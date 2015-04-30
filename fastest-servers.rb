@@ -10,7 +10,7 @@ require 'pp'
 #ntp_server_list = ['ntp.ubuntu.com']
 #(0..3).to_a.each { |n| ntp_server_list.push( n.to_s + '.ubuntu.pool.ntp.org' ) } ) }
 SERVER_LIST_TYPE = ENV['FASTEST_SERVER_LIST_TYPE'] || 'HTTP'
-timeout = ENV['FASTEST_SERVER_INITIAL_TIMEOUT'] || 0.050
+timeout = ENV['FASTEST_SERVER_INITIAL_TIMEOUT'].to_f || 0.050
 mirrorlist_file = ENV['MIRRORLIST_LOCAL_FILE']
 mirrorlist_host = ENV['MIRRORLIST_HOST'] || 'mirrors.ubuntu.com'
 mirrorlist_url  = ENV['MIRRORLIST_URL'] || '/mirrors.txt'
