@@ -12,4 +12,4 @@ script:
   - docklint Dockerfile
   - docker build -t trinitronx/fastest-servers:latest .
   - docker run -ti -v /tmp:/tmp trinitronx/fastest-servers:latest
-  - [ "$(wc -l /tmp/mirrors.txt | awk '{ print $1 }')" -gt 0 ] && bash -c 'echo -e "\e[1;92mPASS\e[0m"; exit 0' || bash -c 'echo -e "\e[1;31mFAIL\e[0m"; exit 1'
+  - "[ \"$(wc -l /tmp/mirrors.txt | awk '{ print $1 }')\" -gt 0 ] && bash -c 'echo -e \"\e[1;92mPASS\e[0m\"; exit 0' || bash -c 'echo -e \"\e[1;31mFAIL\e[0m\"; exit 1'"
