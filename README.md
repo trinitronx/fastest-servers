@@ -14,16 +14,16 @@ Outputs a `mirrors.txt` file to `/tmp/` in the container.  To capture this file 
 Configuration / Environment Variables
 -------------------------------------
 
-Variable Name                    | Description                                                                                                                                  | Default
--------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------
-`FASTEST_SERVER_LIST_TYPE`       | Tells script what port to ping servers on. `HTTP` or `NTP` (Experimental)                                                                    | `HTTP`
-`FASTEST_SERVER_INITIAL_TIMEOUT` | Initial timeout used as limit for server ping timeout. If < 5 servers satisfy timeout, add `0.001` to this & retry until >= 5 servers found. | `0.050`
-`MIRRORLIST_LOCAL_FILE`          | If specified, use this local file as mirror list input to find fastest servers in list                                                       | `nil`
-`MIRRORLIST_HOST`                | Get `MIRRORLIST_URL` from this host and use as mirror list input for finding fastest servers                                                 | `mirrors.ubuntu.com`
-`MIRRORLIST_URL`                 | Get this URL from `MIRRORLIST_HOST` & use as mirror list input                                                                               | `/mirrors.txt`
-`MIRRORLIST_PORT`                | Port to contact `MIRRORLIST_HOST` on for getting `MIRRORLIST_URL` via HTTP                                                                   | `80`
-`FASTEST_SERVER_LIST_OUTPUT`     | Local file to output final filtered mirror list to.  If using docker, ensure you volume mount enclosing directory from host                  | `/tmp/mirrors.txt`
-`FASTEST_SERVER_DEBUG`           | Puts script in `DEBUG` mode, which prints extra information to `STDOUT`                                                                      | `nil`
+Variable Name                    | Description                                                                                                                                             | Default
+-------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------
+`FASTEST_SERVER_LIST_TYPE`       | Tells script what port to ping servers on. `HTTP` or `NTP` (Experimental)                                                                               | `HTTP`
+`FASTEST_SERVER_INITIAL_TIMEOUT` | Initial timeout in seconds used as limit for server ping timeout. If < 5 servers satisfy timeout, add `0.001` to this & retry until >= 5 servers found. | `0.050` (seconds)
+`MIRRORLIST_LOCAL_FILE`          | If specified, use this local file as mirror list input to find fastest servers in list                                                                  | `nil`
+`MIRRORLIST_HOST`                | Get `MIRRORLIST_URL` from this host and use as mirror list input for finding fastest servers                                                            | `mirrors.ubuntu.com`
+`MIRRORLIST_URL`                 | Get this URL from `MIRRORLIST_HOST` & use as mirror list input                                                                                          | `/mirrors.txt`
+`MIRRORLIST_PORT`                | Port to contact `MIRRORLIST_HOST` on for getting `MIRRORLIST_URL` via HTTP                                                                              | `80`
+`FASTEST_SERVER_LIST_OUTPUT`     | Local file to output final filtered mirror list to.  If using docker, ensure you volume mount enclosing directory from host                             | `/tmp/mirrors.txt`
+`FASTEST_SERVER_DEBUG`           | Puts script in `DEBUG` mode, which prints extra information to `STDOUT`                                                                                 | `nil`
 
 Example Usage
 -------------
