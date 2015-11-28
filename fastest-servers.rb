@@ -108,13 +108,20 @@ def get_mirrors(mirrorlist_host, port)
   mirror_list
 end
 
-if mirrorlist_host
+if ! (mirrorlist_host.empty? || mirrorlist_host.nil?)
   fastest_server_list = get_mirrors(mirrorlist_host, port)
-elsif mirrorlist_file
-  fastest_server_list = File.open(mirrorlist_file).read
+elsif !( mirrorlist_file.empty? || mirrorlist_file.nil?)
+  fastest_server_list = []
+  IO.readlines(mirrorlist_file).each do |line|
+    fastest_server_list.push( URI(line.chomp) )
+  end
 else
   printf "%s", "\033[1;31mERROR:\033[0m No MIRRORLIST_HOST or MIRRORLIST_LOCAL_FILE given."
   raise EmptyListException, "Initial server list could not be generated"
+end
+
+if ENV['FASTEST_SERVER_DEBUG']
+  printf "%42s = %s\n", "\033[1;32mfastest_server_list\033[0m", fastest_server_list
 end
 
 puts "Total Mirror servers Found: #{fastest_server_list.length}"
