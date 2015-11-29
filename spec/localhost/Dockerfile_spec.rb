@@ -1,27 +1,11 @@
 require 'spec_helper'
 require 'docker'
 
-require 'singleton'
+$LOAD_PATH << File.join(File.dirname(__FILE__), '..', 'helpers')
 
-class SingletonDockerImage
-  include Singleton
-
-  attr_accessor :id
-end
-
-class SingletonDockerContainer
-  include Singleton
-
-  attr_accessor :id
-end
-
-class String
-  REGEXP_PATTERN = /(\e|\033)\[(\d+?)(;\d+?)*m/m
-
-  def uncolorize
-    self.gsub(REGEXP_PATTERN, '')
-  end
-end
+require 'singleton_docker_helper'
+require 'tarextractor_helper'
+require 'string_uncolorize_helper'
 
 describe 'Dockerfile' do
   RSpec.shared_context "trinitronx/fastest-servers image" do
@@ -184,8 +168,8 @@ describe 'Dockerfile' do
       end
 
       # This ExampleGroup is SLOW because it waits for the running container to complete
+      # Skip with: --tag ~slow
       describe "Docker container fastest_servers_rspec_test", slow: true do
-        include_context "fastest_servers_rspec_test"
 
         before(:all) do
           # Wait max of 15 minutes for container to finish
@@ -197,10 +181,8 @@ describe 'Dockerfile' do
         end
 
         describe "fastest-server output" do
-          # puts "container.class: #{container.class}"
-          # puts "container.methods: #{container.methods - Object.methods}"
-          # pending
           it 'should output expected strings to STDOUT' do
+            # Strip ANSI color with string_uncolorize_helper
             expect(container.logs(stdout: true).uncolorize).to match(/Total Mirror servers Found:\s+[0-9]+/)
             expect(container.logs(stdout: true).uncolorize).to match(/SERVER_LIST_TYPE = HTTP/)
             expect(container.logs(stdout: true).uncolorize).to match(/FASTEST_SERVER_INITIAL_TIMEOUT = 0.090000/)
