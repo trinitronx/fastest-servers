@@ -187,11 +187,49 @@ describe 'Dockerfile' do
           end
         end
 
-      #   # describe "fastest-server output" do
-      #   #   ## TODO: mirrorlist.txt file should have stuff in it...
-      #   # end
+        describe "fastest-server mirrors.txt output" do
+
+          def tmp_dir
+            File.join('', 'tmp', 'rspec-testing')
+          end
+
+          def output_tar
+            File.join(tmp_dir, 'output.tar')
+          end
+
+          before(:all) do
+            # Tell SpecInfra NOT to run commands inside the container
+            # Necessary so we can run tests on copied mirrors.txt file on host
+            set :backend, :exec
+
+            FileUtils.rm_rf tmp_dir if File.directory? tmp_dir
+            FileUtils.mkdir_p(tmp_dir)
+            puts "Attempting to copy /tmp/mirrors.txt from container"
+
+            File.open( output_tar , 'w') do |file|
+              container.copy('/tmp/mirrors.txt') do |chunk|
+                file.write(chunk)
+              end
+              file.flush
+            end
+
+            TarExtractor.extract( output_tar, tmp_dir, true )
+          end
+
+          describe file( File.join('', 'tmp', 'rspec-testing', 'output.tar') ) do
+            it { should be_file }
+          end
+
+          describe file( File.join('', 'tmp', 'rspec-testing', 'mirrors.txt') ) do
+            it { should be_file }
+            its(:content) { should match /^(https?|ftp):\/\/[^\s\/$.?#].[^\s]*$/i }
+            it 'should have >=5 entries' do
+              expect(subject.content.lines.length).to be >= 5
+            end
+          end
+        end
       end
-    end
+    end # end context fastest_servers_rspec_test
   end
 
   ## Leave image around, because SpecInfra docker backend uses same image ID
