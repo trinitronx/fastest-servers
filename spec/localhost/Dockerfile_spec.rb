@@ -173,30 +173,38 @@ describe 'Dockerfile' do
         its(['Config']) { should include 'StdinOnce' => true }
       end
 
-      # describe "Docker container fastest_servers_rspec_test" do
-      #   before(:all) do
-      #     # Wait max of 10 minutes for container to finish
-      #     set :backend, :exec
-      #     container.wait(10 * 60)
-      #   end
+      # This ExampleGroup is SLOW because it waits for the running container to complete
+      describe "Docker container fastest_servers_rspec_test", slow: true do
+        include_context "fastest_servers_rspec_test"
 
-      #   describe "fastest-server output" do
-      #     puts "container.class: #{container.class}"
-      #     puts "container.methods: #{container.methods - Object.methods}"
-      #     pending
-      #     # expect(container.logs(stdout: true)).to match(/Total Mirror servers Found:\s+[0-9]+/)
-      #     # expect(container.logs(stdout: true)).to match(/SERVER_LIST_TYPE = HTTP/)
-      #     # expect(container.logs(stdout: true)).to match(/MIRRORLIST_PORT = 80/)
-      #     # expect(container.logs(stdout: true)).to match(/MIRRORLIST_HOST = mirrors\.ubuntu\.com/)
-      #     # expect(container.logs(stdout: true)).to match(/MIRRORLIST_URL = \/mirrors\.txt/)
-      #     # expect(container.logs(stdout: true)).to match(/FASTEST_SERVER_LIST_OUTPUT = \/tmp\/mirrors\.txt/)
-      #     # expect(container.logs(stdout: true)).to match(/fastest_server_list = \[.*#<URI::HTTP/)
-      #   end
+        before(:all) do
+          # Wait max of 15 minutes for container to finish
+          set :backend, :exec
+          puts "Waiting for container #{container.id} to complete running..."
+          puts "Container STDOUT/STDERR:\n"
+          container.attach(:stream => true, :stdin => nil, :stdout => true, :stderr => true, :logs => true, :tty => true)
+          container.wait(15 * 60)
+        end
+
+        describe "fastest-server output" do
+          # puts "container.class: #{container.class}"
+          # puts "container.methods: #{container.methods - Object.methods}"
+          # pending
+          it 'should output expected strings to STDOUT' do
+            expect(container.logs(stdout: true)).to match(/Total Mirror servers Found:\s+[0-9]+/)
+          # expect(container.logs(stdout: true)).to match(/SERVER_LIST_TYPE = HTTP/)
+          # expect(container.logs(stdout: true)).to match(/MIRRORLIST_PORT = 80/)
+          # expect(container.logs(stdout: true)).to match(/MIRRORLIST_HOST = mirrors\.ubuntu\.com/)
+          # expect(container.logs(stdout: true)).to match(/MIRRORLIST_URL = \/mirrors\.txt/)
+          # expect(container.logs(stdout: true)).to match(/FASTEST_SERVER_LIST_OUTPUT = \/tmp\/mirrors\.txt/)
+          # expect(container.logs(stdout: true)).to match(/fastest_server_list = \[.*#<URI::HTTP/)
+          end
+        end
 
       #   # describe "fastest-server output" do
       #   #   ## TODO: mirrorlist.txt file should have stuff in it...
       #   # end
-      # end
+      end
     end
   end
 
