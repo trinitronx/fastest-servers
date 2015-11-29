@@ -6,7 +6,7 @@ MAINTAINER James Cuzella (@trinitronx)
 WORKDIR /tmp
 ADD ./Gemfile Gemfile
 ADD ./Gemfile.lock Gemfile.lock
-RUN bundle install --without test
+RUN bundle install --without='test development'
 
 # Everything up to here was cached. This includes
 # the bundle install, unless the Gemfiles changed.
