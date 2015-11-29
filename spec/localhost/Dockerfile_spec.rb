@@ -1,49 +1,83 @@
 require 'spec_helper'
 require 'docker'
 
+require 'singleton'
+
+class SingletonDockerImage
+  include Singleton
+
+  attr_accessor :id
+end
+
+class SingletonDockerContainer
+  include Singleton
+
+  attr_accessor :id
+end
+
 describe 'Dockerfile' do
+  RSpec.shared_context "trinitronx/fastest-servers image" do
+    def image
+      # This image will now be cached by docker
+      # and used for the rest of the RSpec tests
+      # We will instantiate a SingletonDockerImage to store & retrieve the id throughout
+      # Then return the Docker::Image class for that image ID
+      singleton_image = SingletonDockerImage.instance
+      if ! singleton_image.id.nil?
+        Docker::Image.get(singleton_image.id)
+      else
+        img = Docker::Image.build_from_dir('.')
+        singleton_image.id = img.id
+        img
+      end
+    end
 
-  before(:all) do
-    @image = Docker::Image.build_from_dir('.')
-    puts "Built Image: #{@image.id}"
-    # This image will now be cached by docker
-    # and used for the rest of the RSpec tests
-    # Tag it with the REPO and git COMMIT ID
-    @repo = ! ENV['REPO'].nil? ? ENV['REPO'] : 'trinitronx/fastest-servers'
+    before(:all) do
+      # Use Global Variable so we always reference the SAME image
+      
+      puts "Built Image: #{image.id}"
+      
+      # Tag it with the REPO and git COMMIT ID
+      @repo = ! ENV['REPO'].nil? ? ENV['REPO'] : 'trinitronx/fastest-servers'
 
-    require 'git'
-    g = Git.open(Dir.pwd)
-    head = g.gcommit('HEAD').sha if g.index.readable?
+      require 'git'
+      g = Git.open(Dir.pwd)
+      head = g.gcommit('HEAD').sha if g.index.readable?
 
-    @commit = ! ENV['COMMIT'].nil? ? ENV['COMMIT'] : head[0..7]
-    @commit ||= 'rspec-testing' # If we failed to get a commit sha, label it with this as default
-    puts "Tagging Image: #{@image.id} with: #{@repo}:#{@commit}"
-    @image.tag( :repo => @repo, :tag => @commit, force: true)
+      @commit = ! ENV['COMMIT'].nil? ? ENV['COMMIT'] : head[0..7]
+      @commit ||= 'rspec-testing' # If we failed to get a commit sha, label it with this as default
+      puts "Tagging Image: #{image.id} with: #{@repo}:#{@commit}"
+      image.tag( :repo => @repo, :tag => @commit, force: true)
 
-    set :os, family: :debian
-    set :backend, :exec
-    set :docker_image, @image.id
+      set :os, family: :debian
+      set :backend, :exec
+      set :docker_image, image.id
 
+    end
   end
 
   describe 'Dockerfile#config' do
+    include_context "trinitronx/fastest-servers image"
+
     it 'should run fastest-servers.rb' do
-      expect(@image.json['ContainerConfig']['Cmd']).to include('/bin/sh')
-      expect(@image.json['ContainerConfig']['Cmd']).to include(/fastest-servers\.rb/)
+      expect(image.json['ContainerConfig']['Cmd']).to include('/bin/sh')
+      expect(image.json['ContainerConfig']['Cmd']).to include(/fastest-servers\.rb/)
     end
 
     it 'should have WorkingDir set to /opt/app' do
-      expect(@image.json['ContainerConfig']['WorkingDir']).to eq('/opt/app')
+      expect(image.json['ContainerConfig']['WorkingDir']).to eq('/opt/app')
     end
   end
 
   describe 'Dockerfile#image' do
+    include_context "trinitronx/fastest-servers image"
+
     context "inside Docker Container" do
       before(:all) {
         set :backend, :docker
-        set :docker_image, @image.id
-        t3 = Time.now
-        puts "Dockerfile_spec.rb: Running 'inside Docker Container' tests on: #{@image.id} at: #{t3}.#{t3.nsec}"
+        set :docker_image, image.id
+        # t3 = Time.now
+        # puts "Dockerfile_spec.rb: Running 'inside Docker Container' tests on: #{image.id} at: #{t3}.#{t3.nsec}"
       }
 
       describe process("ruby") do
@@ -54,40 +88,69 @@ describe 'Dockerfile' do
   end
 
   describe 'Dockerfile#running' do
-    before(:all) do
-      @container = Docker::Container.create(
+    include_context "trinitronx/fastest-servers image"
+
+    # Define a shared context for storing our container vars
+    RSpec.shared_context "fastest_servers_rspec_test" do
+      def container_opts
         {
-          "name" => "fastest_servers_rspec_test",
-          "Image" => @image.id,
-          "HostConfig" => {
-             "Binds" => ["/tmp/:/tmp"],
-          },
-          "Mounts"=>[
-            {"Source"=>"/tmp", "Destination"=>"/tmp", "Mode"=>"", "RW"=>true}
-          ],
-          "AttachStdin" => true,
-          "AttachStdout" => true,
-          "AttachStderr" => true,
-          "Tty" => true,
-          "OpenStdin" => true,
-          "StdinOnce" => true,
-          "Env" => [
-            "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-            "RUBY_MAJOR=2.2",
-            "RUBY_VERSION=2.2.0",
-            "FASTEST_SERVER_DEBUG=true"
-          ],
-          "Volumes"=>nil
-        }
-      )
+            "name" => "fastest_servers_rspec_test",
+            "Image" => image.id,
+            "HostConfig" => {
+               "Binds" => ["/tmp/:/tmp"],
+            },
+            "Mounts"=>[
+              {"Source"=>"/tmp", "Destination"=>"/tmp", "Mode"=>"", "RW"=>true}
+            ],
+            "AttachStdin" => true,
+            "AttachStdout" => true,
+            "AttachStderr" => true,
+            "Tty" => true,
+            "OpenStdin" => true,
+            "StdinOnce" => true,
+            "Env" => [
+              "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+              "RUBY_MAJOR=2.2",
+              "RUBY_VERSION=2.2.0",
+              "FASTEST_SERVER_DEBUG=true"
+            ],
+            "Volumes"=>nil
+          }
+      end
 
-      puts @container.start
+      def container
+        # Attempt to work around RSpec's insistence that we either use `let` or `before(:all)` exclusively
+        # without sharing a global scope of any kind
+        # This hack lets us effectively use a Singleton-like container across RSpec Examples & ExampleGroups
+        # We just instantiate a SingletonDockerContainer class to store the container id, then use it throughout
+        # Try to find our started container if it's already there and use it
+        # If not found, create it!
+        singleton_container = SingletonDockerContainer.instance
+        if ! singleton_container.id.nil?
+          Docker::Container.get(singleton_container.id)
+        else
+          c = Docker::Container.create(container_opts)
+          singleton_container.id = c.id
+          c
+        end
+      end
 
-      set :os, family: :debian
+      before(:all) do
+        # Start the container before running any tests
+        container.start
+        set :os, family: :debian
+      end
 
+      after(:all) do
+        # Destroy the container after all tests
+        container.kill
+        container.delete(:force => true)
+      end
     end
 
     context "on Host when run interactively w/TTY and FASTEST_SERVER_DEBUG=true; It has" do
+      include_context "fastest_servers_rspec_test"
+
       before(:all) {
         # Tell SpecInfra NOT to run commands inside the container
         # Necessary so we can run `docker inspect` on host
@@ -114,31 +177,26 @@ describe 'Dockerfile' do
       #   before(:all) do
       #     # Wait max of 10 minutes for container to finish
       #     set :backend, :exec
-      #     @container.wait(10 * 60)
+      #     container.wait(10 * 60)
       #   end
 
       #   describe "fastest-server output" do
-      #     puts "@container.class: #{@container.class}"
-      #     puts "@container.methods: #{@container.methods - Object.methods}"
+      #     puts "container.class: #{container.class}"
+      #     puts "container.methods: #{container.methods - Object.methods}"
       #     pending
-      #     # expect(@container.logs(stdout: true)).to match(/Total Mirror servers Found:\s+[0-9]+/)
-      #     # expect(@container.logs(stdout: true)).to match(/SERVER_LIST_TYPE = HTTP/)
-      #     # expect(@container.logs(stdout: true)).to match(/MIRRORLIST_PORT = 80/)
-      #     # expect(@container.logs(stdout: true)).to match(/MIRRORLIST_HOST = mirrors\.ubuntu\.com/)
-      #     # expect(@container.logs(stdout: true)).to match(/MIRRORLIST_URL = \/mirrors\.txt/)
-      #     # expect(@container.logs(stdout: true)).to match(/FASTEST_SERVER_LIST_OUTPUT = \/tmp\/mirrors\.txt/)
-      #     # expect(@container.logs(stdout: true)).to match(/fastest_server_list = \[.*#<URI::HTTP/)
+      #     # expect(container.logs(stdout: true)).to match(/Total Mirror servers Found:\s+[0-9]+/)
+      #     # expect(container.logs(stdout: true)).to match(/SERVER_LIST_TYPE = HTTP/)
+      #     # expect(container.logs(stdout: true)).to match(/MIRRORLIST_PORT = 80/)
+      #     # expect(container.logs(stdout: true)).to match(/MIRRORLIST_HOST = mirrors\.ubuntu\.com/)
+      #     # expect(container.logs(stdout: true)).to match(/MIRRORLIST_URL = \/mirrors\.txt/)
+      #     # expect(container.logs(stdout: true)).to match(/FASTEST_SERVER_LIST_OUTPUT = \/tmp\/mirrors\.txt/)
+      #     # expect(container.logs(stdout: true)).to match(/fastest_server_list = \[.*#<URI::HTTP/)
       #   end
 
       #   # describe "fastest-server output" do
       #   #   ## TODO: mirrorlist.txt file should have stuff in it...
       #   # end
       # end
-    end
-
-    after(:all) do
-      @container.kill
-      @container.delete(:force => true)
     end
   end
 
@@ -149,6 +207,6 @@ describe 'Dockerfile' do
   ## This ordering makes it so the image CANNOT be cleaned up since the SpecInfra containers will hang around until the very end!
   ## Docker warns with Error: "cannot delete defec7ed00 because the container badcode123 is using it"
   # after(:all) do
-  #     @image.remove(:force => true)
+  #     image.remove(:force => true)
   # end
 end
