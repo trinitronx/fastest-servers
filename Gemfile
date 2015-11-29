@@ -3,6 +3,7 @@ source "https://rubygems.org"
 gem 'net-ping'
 
 group :test do
+  gem 'rake'
   gem 'git'
   gem 'docker-api'
   gem 'serverspec', '~> 2.24' # Docker 1.8 support
