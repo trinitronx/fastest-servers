@@ -88,12 +88,6 @@ describe 'Dockerfile' do
         {
             "name" => "fastest_servers_rspec_test",
             "Image" => image.id,
-            "HostConfig" => {
-               "Binds" => ["/tmp/:/tmp"],
-            },
-            "Mounts"=>[
-              {"Source"=>"/tmp", "Destination"=>"/tmp", "Mode"=>"", "RW"=>true}
-            ],
             "AttachStdin" => true,
             "AttachStdout" => true,
             "AttachStderr" => true,
@@ -152,7 +146,6 @@ describe 'Dockerfile' do
 
       describe docker_container("fastest_servers_rspec_test") do
         it { should be_running }
-        it { should have_volume('/tmp','/tmp') }
         its(:inspection) { should include 'Path' => '/bin/sh' }
         its(:inspection) { should include 'Args' => ["-c", "./fastest-servers.rb"] }
         its(['Config.Cmd']) { should include '/bin/sh' }
