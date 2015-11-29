@@ -19,7 +19,7 @@ FASTEST_SERVER_LIST_OUTPUT = ENV['FASTEST_SERVER_LIST_OUTPUT'] || '/tmp/mirrors.
 
 if ENV['FASTEST_SERVER_DEBUG']
   printf "%42s = %s\n", "\033[1;32mSERVER_LIST_TYPE\033[0m", SERVER_LIST_TYPE
-  printf "%42s = %s\n", "\033[1;32mFASTEST_SERVER_INITIAL_TIMEOUT\033[0m", timeout
+  printf "%42s = %f\n", "\033[1;32mFASTEST_SERVER_INITIAL_TIMEOUT\033[0m", timeout
   printf "%42s = %s\n", "\033[1;32mMIRRORLIST_LOCAL_FILE\033[0m",  mirrorlist_file
   printf "%42s = %s\n", "\033[1;32mMIRRORLIST_HOST\033[0m", mirrorlist_host
   printf "%42s = %s\n", "\033[1;32mMIRRORLIST_URL\033[0m", mirrorlist_url

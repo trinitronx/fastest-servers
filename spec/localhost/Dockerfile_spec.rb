@@ -15,6 +15,14 @@ class SingletonDockerContainer
   attr_accessor :id
 end
 
+class String
+  REGEXP_PATTERN = /(\e|\033)\[(\d+?)(;\d+?)*m/m
+
+  def uncolorize
+    self.gsub(REGEXP_PATTERN, '')
+  end
+end
+
 describe 'Dockerfile' do
   RSpec.shared_context "trinitronx/fastest-servers image" do
     def image
@@ -112,7 +120,8 @@ describe 'Dockerfile' do
               "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
               "RUBY_MAJOR=2.2",
               "RUBY_VERSION=2.2.0",
-              "FASTEST_SERVER_DEBUG=true"
+              "FASTEST_SERVER_DEBUG=true",
+              "FASTEST_SERVER_INITIAL_TIMEOUT=0.090"
             ],
             "Volumes"=>nil
           }
@@ -148,7 +157,7 @@ describe 'Dockerfile' do
       end
     end
 
-    context "on Host when run interactively w/TTY and FASTEST_SERVER_DEBUG=true; It has" do
+    context "on Host when run interactively w/TTY, FASTEST_SERVER_DEBUG=true, FASTEST_SERVER_INITIAL_TIMEOUT=0.090; It has" do
       include_context "fastest_servers_rspec_test"
 
       before(:all) {
@@ -165,6 +174,7 @@ describe 'Dockerfile' do
         its(['Config.Cmd']) { should include '/bin/sh' }
         its(['Config.Cmd']) { should include './fastest-servers.rb' }
         its(['Config.Env']) { should include 'FASTEST_SERVER_DEBUG=true' }
+        its(['Config.Env']) { should include 'FASTEST_SERVER_INITIAL_TIMEOUT=0.090' }
         its(['Config']) { should include 'AttachStdin' => true }
         its(['Config']) { should include 'AttachStdout' => true }
         its(['Config']) { should include 'AttachStderr' => true }
@@ -182,7 +192,7 @@ describe 'Dockerfile' do
           set :backend, :exec
           puts "Waiting for container #{container.id} to complete running..."
           puts "Container STDOUT/STDERR:\n"
-          container.attach(:stream => true, :stdin => nil, :stdout => true, :stderr => true, :logs => true, :tty => true)
+          puts container.attach(:stream => true, :stdin => nil, :stdout => true, :stderr => true, :logs => true, :tty => true)
           container.wait(15 * 60)
         end
 
@@ -191,13 +201,14 @@ describe 'Dockerfile' do
           # puts "container.methods: #{container.methods - Object.methods}"
           # pending
           it 'should output expected strings to STDOUT' do
-            expect(container.logs(stdout: true)).to match(/Total Mirror servers Found:\s+[0-9]+/)
-          # expect(container.logs(stdout: true)).to match(/SERVER_LIST_TYPE = HTTP/)
-          # expect(container.logs(stdout: true)).to match(/MIRRORLIST_PORT = 80/)
-          # expect(container.logs(stdout: true)).to match(/MIRRORLIST_HOST = mirrors\.ubuntu\.com/)
-          # expect(container.logs(stdout: true)).to match(/MIRRORLIST_URL = \/mirrors\.txt/)
-          # expect(container.logs(stdout: true)).to match(/FASTEST_SERVER_LIST_OUTPUT = \/tmp\/mirrors\.txt/)
-          # expect(container.logs(stdout: true)).to match(/fastest_server_list = \[.*#<URI::HTTP/)
+            expect(container.logs(stdout: true).uncolorize).to match(/Total Mirror servers Found:\s+[0-9]+/)
+            expect(container.logs(stdout: true).uncolorize).to match(/SERVER_LIST_TYPE = HTTP/)
+            expect(container.logs(stdout: true).uncolorize).to match(/FASTEST_SERVER_INITIAL_TIMEOUT = 0.090000/)
+            expect(container.logs(stdout: true).uncolorize).to match(/MIRRORLIST_PORT = 80/)
+            expect(container.logs(stdout: true).uncolorize).to match(/MIRRORLIST_HOST = mirrors\.ubuntu\.com/)
+            expect(container.logs(stdout: true).uncolorize).to match(/MIRRORLIST_URL = \/mirrors\.txt/)
+            expect(container.logs(stdout: true).uncolorize).to match(/FASTEST_SERVER_LIST_OUTPUT = \/tmp\/mirrors\.txt/)
+            expect(container.logs(stdout: true).uncolorize).to match(/fastest_server_list = \[.*#<URI::HTTP/)
           end
         end
 
