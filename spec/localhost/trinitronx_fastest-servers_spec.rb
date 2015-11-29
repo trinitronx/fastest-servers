@@ -3,12 +3,14 @@ require 'spec_helper'
 describe "trinitronx/fastest-server:latest" do
 
   before(:all) do
-    #@image = Docker::Image.build_from_dir('.')
+    @image = Docker::Image.build_from_dir('.')
+    t10 = Time.now
+    puts "trinitronx_fastest-servers_spec.rb: Created Image: #{@image.id} at: #{t10}.#{t10.nsec}"
 
     set :os, family: :debian
     set :backend, :docker
-    #set :docker_image, @image.id
-    set :docker_image, 'trinitronx/fastest-servers:latest'
+    set :docker_image, @image.id
+    # set :docker_image, 'trinitronx/fastest-servers:latest'
 
   end
 
